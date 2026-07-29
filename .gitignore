@@ -1,0 +1,28 @@
+# Datos y archivos generados por usuarios
+chat.db
+chat.db-shm
+chat.db-wal
+uploads/
+static/uploads/
+.qa-browser/
+
+# Configuración local y secretos
+.env
+.env.*
+!.env.example
+*.log
+
+# Python y herramientas
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Editores y sistema
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

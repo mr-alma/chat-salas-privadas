@@ -1,0 +1,15 @@
+.git
+.gitignore
+.qa-browser
+chat.db
+chat.db-shm
+chat.db-wal
+uploads
+static/uploads
+tests
+__pycache__
+**/__pycache__
+*.pyc
+.env
+.env.*
+*.log
