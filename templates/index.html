@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ room["name"] }} · Chat</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="room-page" data-room-slug="{{ room['slug'] }}" data-room-name="{{ room['name'] }}">
+  <section id="access-gate" class="access-gate" aria-labelledby="access-title" hidden>
+    <div class="access-card">
+      <div class="access-icon" aria-hidden="true">🔒</div>
+      <p class="eyebrow">Sala privada</p>
+      <h1 id="access-title">{{ room["name"] }}</h1>
+      <p id="access-help" class="access-help">Introduce la clave para entrar.</p>
+      <form id="access-form" class="access-form">
+        <label for="access-secret" id="access-label">Contraseña</label>
+        <input id="access-secret" name="secret" type="password" autocomplete="current-password" required>
+        <label class="remember-row">
+          <input id="remember-device" type="checkbox">
+          Recordar este dispositivo durante 30 días
+        </label>
+        <p id="access-error" class="form-error" role="alert"></p>
+        <button id="access-submit" type="submit" class="primary-btn">Entrar a la sala</button>
+      </form>
+      <a class="subtle-link" href="/">Volver al inicio</a>
+    </div>
+  </section>
+
+  <section id="name-gate" class="access-gate" aria-labelledby="name-title" hidden>
+    <div class="access-card">
+      <div class="access-icon" aria-hidden="true">👋</div>
+      <p class="eyebrow">Antes de entrar</p>
+      <h1 id="name-title">¿Cómo te llamas?</h1>
+      <p class="access-help">Este nombre aparecerá junto a tus mensajes.</p>
+      <form id="name-form" class="access-form">
+        <label for="display-name">Tu nombre</label>
+        <input id="display-name" maxlength="40" autocomplete="nickname" placeholder="Ej. Ana" required>
+        <p id="name-error" class="form-error" role="alert"></p>
+        <button type="submit" class="primary-btn">Continuar</button>
+      </form>
+    </div>
+  </section>
+
+  <section id="approval-gate" class="access-gate" aria-labelledby="approval-title" hidden>
+    <div class="access-card waiting-card">
+      <div class="waiting-pulse" aria-hidden="true"><span></span></div>
+      <p class="eyebrow">Solicitud enviada</p>
+      <h1 id="approval-title">Esperando ser aceptado...</h1>
+      <p class="access-help">Te avisaremos en cuanto el administrador tome una decisión.</p>
+      <a class="subtle-link" href="/">Volver al inicio</a>
+    </div>
+  </section>
+
+  <div id="app-toast" class="app-toast" hidden>
+    <span id="app-toast-text"></span>
+    <button id="app-toast-close" type="button" aria-label="Cerrar">×</button>
+  </div>
+
+  <div class="chat-workspace">
+    <nav class="room-rail" aria-label="Cambiar de sala">
+      <a class="room-bubble room-home" href="/" aria-label="Inicio y nueva sala" title="Inicio y nueva sala">💬</a>
+      <div class="room-rail-separator"></div>
+      <section class="rail-section" aria-labelledby="rooms-rail-title">
+        <span id="rooms-rail-title" class="rail-section-label">Salas</span>
+        <div id="room-rail-list" class="room-rail-list"></div>
+        <a class="room-bubble room-add" href="/" aria-label="Añadir o buscar sala" title="Añadir o buscar sala">+</a>
+      </section>
+      <div class="room-rail-separator"></div>
+      <section class="rail-section rail-direct-section" aria-labelledby="direct-rail-title">
+        <span id="direct-rail-title" class="rail-section-label">Privados</span>
+        <div id="direct-rail-list" class="room-rail-list direct-rail-list"></div>
+      </section>
+    </nav>
+
+    <div class="app">
+    <header class="app-header">
+      <a class="header-back" href="/" title="Volver al inicio">‹</a>
+      <div class="app-heading">
+        <div class="app-title">💬 <span id="room-name">{{ room["name"] }}</span></div>
+        <button type="button" id="share-btn" class="share-btn">Copiar enlace</button>
+      </div>
+      <button type="button" id="message-search-btn" class="settings-btn header-feature-btn" title="Buscar mensajes">🔍</button>
+      <button type="button" id="pinned-btn" class="settings-btn header-feature-btn" title="Mensaje fijado" hidden>📌</button>
+      <button type="button" id="media-gallery-btn" class="settings-btn header-feature-btn" title="Archivos compartidos">🗂️</button>
+      <button type="button" id="join-requests-btn" class="settings-btn header-feature-btn" title="Solicitudes de entrada" hidden>
+        🙋<span id="join-request-count" class="header-badge"></span>
+      </button>
+      <button type="button" id="direct-requests-btn" class="settings-btn header-feature-btn" title="Solicitudes de chat privado" hidden>
+        💌<span id="direct-request-count" class="header-badge"></span>
+      </button>
+      <button type="button" id="online-btn" class="settings-btn" title="Personas conectadas">👥</button>
+      <button type="button" id="settings-btn" class="settings-btn" title="Opciones">⚙️</button>
+      <button type="button" id="change-name-btn" class="my-name" title="Abrir mi perfil">
+        <span id="my-profile-avatar" class="profile-avatar profile-avatar-tiny"></span>
+        Tú: <b id="my-name-label"></b>
+        <span id="my-role-tag" class="role-tag"></span>
+      </button>
+    </header>
+
+    <div id="message-search-panel" class="message-search-panel" hidden>
+      <label for="message-search-input">Buscar en esta sala</label>
+      <div class="message-search-controls">
+        <input id="message-search-input" type="search" maxlength="80" placeholder="Escribe una palabra o frase…" autocomplete="off">
+        <span id="message-search-count">0/0</span>
+        <button id="message-search-prev" type="button" title="Coincidencia anterior">↑</button>
+        <button id="message-search-next" type="button" title="Coincidencia siguiente">↓</button>
+        <button id="message-search-close" type="button" aria-label="Cerrar búsqueda">×</button>
+      </div>
+    </div>
+
+    <aside id="media-gallery-panel" class="media-gallery-panel" aria-label="Archivos compartidos en esta sala" hidden>
+      <div class="media-gallery-heading">
+        <div>
+          <strong>Contenido de esta sala</strong>
+          <span>Solo archivos enviados aquí.</span>
+        </div>
+        <button id="media-gallery-close" type="button" aria-label="Cerrar archivos compartidos">×</button>
+      </div>
+      <nav id="media-gallery-tabs" class="media-gallery-tabs" aria-label="Filtrar contenido">
+        <button type="button" data-media-type="all" class="active">Todo <span></span></button>
+        <button type="button" data-media-type="image">Fotos <span></span></button>
+        <button type="button" data-media-type="video">Videos <span></span></button>
+        <button type="button" data-media-type="audio">Audios <span></span></button>
+        <button type="button" data-media-type="file">Archivos <span></span></button>
+      </nav>
+      <div id="media-gallery-content" class="media-gallery-content"></div>
+      <button id="media-gallery-more" type="button" class="media-gallery-more" hidden>Cargar anteriores</button>
+    </aside>
+
+    <div id="name-editor-panel" class="name-editor-panel" hidden>
+      <form id="change-name-form">
+        <div>
+          <strong>Cambiar mi nombre</strong>
+          <span>Debe ser único dentro de esta sala.</span>
+        </div>
+        <input id="new-display-name" maxlength="40" autocomplete="nickname" required>
+        <p id="change-name-error" class="form-error" role="alert"></p>
+        <div class="name-editor-actions">
+          <button id="cancel-name-change" type="button">Cancelar</button>
+          <button type="submit" class="save-name-btn">Guardar</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="pinned-panel" class="feature-panel" hidden>
+      <div>
+        <strong>Mensaje fijado</strong>
+        <span id="pinned-preview"></span>
+      </div>
+      <div class="feature-panel-actions">
+        <button id="jump-pinned-btn" type="button">Ver</button>
+        <button id="unpin-btn" type="button">Desfijar</button>
+      </div>
+    </div>
+    <div id="join-requests-panel" class="join-requests-panel" hidden>
+      <div class="panel-heading">
+        <strong>Solicitudes pendientes</strong>
+        <span>Requieren la decisión de un Admin.</span>
+      </div>
+      <section class="request-section">
+        <h3>Acceso a la sala</h3>
+        <div id="join-requests-list"></div>
+      </section>
+      <section class="request-section">
+        <h3>Solicitudes de expulsión</h3>
+        <div id="expulsion-requests-list"></div>
+      </section>
+    </div>
+    <div id="direct-requests-panel" class="join-requests-panel direct-requests-panel" hidden>
+      <div class="panel-heading">
+        <strong>Chats privados</strong>
+        <span>Tú decides con quién conversar.</span>
+      </div>
+      <section class="request-section">
+        <h3>Solicitudes recibidas</h3>
+        <div id="direct-requests-list"></div>
+      </section>
+    </div>
+
+    <div id="share-status" class="share-status" aria-live="polite"></div>
+    <div id="settings-panel" class="settings-panel">
+      <label><input type="checkbox" id="dark-mode-toggle"> Modo oscuro</label>
+      <label><input type="checkbox" id="sound-toggle" checked> Sonido al recibir mensajes</label>
+    </div>
+    <div id="online-users" class="online-users"></div>
+    <div id="offline-banner" class="offline-banner">Sin conexión. Reintentando…</div>
+
+    <div id="chat-box" class="chat-box"></div>
+    <div id="typing-indicator" class="typing-indicator"></div>
+
+    <div id="reply-bar" class="reply-bar">
+      <div class="reply-bar-info">
+        <span class="reply-bar-label">Respondiendo a <b id="reply-bar-name"></b></span>
+        <span class="reply-bar-text" id="reply-bar-text"></span>
+      </div>
+      <button type="button" id="reply-bar-cancel" class="reply-bar-cancel" title="Cancelar">✕</button>
+    </div>
+
+    <div id="upload-status" class="upload-status"></div>
+
+    <div id="voice-preview" class="voice-preview" aria-live="polite">
+      <span class="voice-preview-label">Vista previa de tu nota de voz</span>
+      <audio id="voice-preview-audio" controls></audio>
+      <div class="voice-preview-actions">
+        <button type="button" id="voice-discard-btn" class="voice-discard-btn">Descartar</button>
+        <button type="button" id="voice-send-btn" class="voice-send-btn">Enviar audio</button>
+      </div>
+    </div>
+    <div id="file-preview" class="voice-preview">
+      <span class="voice-preview-label">Vista previa del archivo</span>
+      <div id="file-preview-content"></div>
+      <div class="voice-preview-actions">
+        <button type="button" id="file-discard-btn" class="voice-discard-btn">Descartar</button>
+        <button type="button" id="file-send-btn" class="voice-send-btn">Enviar</button>
+      </div>
+    </div>
+
+    <div id="read-only-banner" class="read-only-banner" hidden>
+      Modo de solo lectura activado. No tienes permisos para enviar mensajes en este canal.
+    </div>
+
+    <form id="chat-form" class="chat-form">
+      <div id="mention-menu" class="mention-menu" hidden></div>
+      <input type="file" id="file-input" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.zip,.txt" hidden>
+      <button type="button" id="attach-btn" class="icon-btn" title="Adjuntar imagen, audio o video">📎</button>
+      <button type="button" id="mic-btn" class="icon-btn" title="Grabar nota de voz">
+        🎙️<span id="record-status" class="record-status"></span>
+      </button>
+      <button type="button" id="cancel-record-btn" class="cancel-record-btn" hidden>Cancelar</button>
+      <input id="msg-input" type="text" placeholder="Escribe un mensaje…" autocomplete="off">
+      <button type="submit" class="send-btn">Enviar</button>
+    </form>
+    </div>
+  </div>
+
+  <div id="delete-confirm-dialog" class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-confirm-title" hidden>
+    <div class="confirm-card">
+      <span class="confirm-icon" aria-hidden="true">🗑️</span>
+      <div>
+        <p class="eyebrow">Confirmar acción</p>
+        <h2 id="delete-confirm-title">¿Borrar para todos?</h2>
+        <p>El mensaje desaparecerá para todas las personas de la sala. Esta acción no se puede deshacer.</p>
+      </div>
+      <div class="confirm-actions">
+        <button id="cancel-delete-for-all" type="button">Cancelar</button>
+        <button id="confirm-delete-for-all" type="button" class="danger-btn">Borrar para todos</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="profile-dialog" class="profile-dialog" role="dialog" aria-modal="true" aria-labelledby="profile-dialog-title" hidden>
+    <div class="profile-card">
+      <button id="profile-dialog-close" type="button" class="profile-close" aria-label="Cerrar perfil">×</button>
+      <button id="profile-banner-view" type="button" class="profile-cover profile-media-trigger" aria-label="Ampliar banner"></button>
+      <button id="profile-banner-change" type="button" class="profile-banner-change" hidden>Cambiar banner</button>
+      <input id="profile-banner-input" type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden>
+      <div class="profile-avatar-wrap">
+        <button id="profile-dialog-avatar" type="button" class="profile-avatar profile-avatar-large profile-media-trigger" aria-label="Ampliar foto de perfil"></button>
+        <button id="profile-photo-change" type="button" class="profile-photo-change" hidden>Cambiar foto</button>
+        <input id="profile-photo-input" type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden>
+      </div>
+      <div class="profile-content">
+        <p class="eyebrow">Perfil</p>
+        <h2 id="profile-dialog-title"></h2>
+        <span id="profile-dialog-role" class="role-tag"></span>
+        <p id="profile-dialog-bio" class="profile-bio"></p>
+        <form id="profile-edit-form" hidden>
+          <label>Nombre<input id="profile-name-input" maxlength="40" autocomplete="nickname"></label>
+          <label>Biografía<textarea id="profile-bio-input" maxlength="180" rows="4" placeholder="Cuéntales algo sobre ti…"></textarea></label>
+          <p id="profile-form-error" class="form-error" role="alert"></p>
+          <button type="submit" class="primary-btn">Guardar perfil</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div id="profile-media-viewer" class="profile-media-viewer" role="dialog" aria-modal="true" aria-label="Vista ampliada" hidden>
+    <button id="profile-media-viewer-close" type="button" aria-label="Cerrar vista ampliada">×</button>
+    <img id="profile-media-viewer-image" alt="">
+  </div>
+
+  <script src="{{ url_for('static', filename='media-gallery.js') }}"></script>
+  <script src="{{ url_for('static', filename='profile.js') }}"></script>
+  <script src="{{ url_for('static', filename='message-search.js') }}"></script>
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Salas · Chat</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="lobby-page">
+  <div id="lobby-toast" class="app-toast" hidden>
+    <span id="lobby-toast-text"></span>
+    <button id="lobby-toast-close" type="button" aria-label="Cerrar">×</button>
+  </div>
+  <main class="lobby-shell">
+    <section class="lobby-intro">
+      <span class="brand-mark">💬</span>
+      <p class="eyebrow">Chat privado y sencillo</p>
+      <h1>Crea un espacio para conversar</h1>
+      <p>Comparte el enlace de tu sala y decide si quieres protegerla con contraseña o con un código de seis dígitos.</p>
+      <a class="general-link" href="/room/general">Entrar a la sala general →</a>
+    </section>
+
+    <section class="lobby-card">
+      <div class="tab-row" role="tablist">
+        <button id="create-tab" class="tab-btn active" type="button">Crear sala</button>
+        <button id="join-tab" class="tab-btn" type="button">Entrar con código</button>
+      </div>
+
+      <form id="create-room-form" class="room-form">
+        <label for="room-name">Nombre de la sala</label>
+        <input id="room-name" maxlength="60" placeholder="Ej. Equipo Alfa" autocomplete="off" required>
+
+        <label for="access-type">Acceso</label>
+        <select id="access-type">
+          <option value="public">Sin protección</option>
+          <option value="password">Contraseña</option>
+          <option value="code">Código de 6 dígitos</option>
+        </select>
+
+        <label class="approval-option">
+          <input id="approval-required" type="checkbox">
+          <span>
+            <strong>Aprobar manualmente a cada persona</strong>
+            <small>Solo el creador podrá aceptar o rechazar solicitudes.</small>
+          </span>
+        </label>
+
+        <div id="secret-field" class="conditional-field" hidden>
+          <label for="room-secret" id="secret-label">Contraseña</label>
+          <div class="secret-input-row">
+            <input id="room-secret" type="password" autocomplete="new-password">
+            <button id="toggle-secret" class="input-action" type="button" aria-label="Mostrar contraseña">Mostrar</button>
+          </div>
+          <p id="secret-hint" class="field-hint">Usa al menos 6 caracteres.</p>
+        </div>
+
+        <p id="create-error" class="form-error" role="alert"></p>
+        <button id="create-submit" type="submit" class="primary-btn">Crear sala</button>
+      </form>
+
+      <form id="join-room-form" class="room-form" hidden>
+        <label for="room-code">Código o identificador de la sala</label>
+        <input id="room-code" maxlength="32" placeholder="Ej. a8k3m2qx" autocomplete="off" required>
+        <p class="field-hint">También puedes abrir directamente el enlace que te compartieron.</p>
+        <p id="join-error" class="form-error" role="alert"></p>
+        <button type="submit" class="primary-btn">Buscar sala</button>
+      </form>
+    </section>
+  </main>
+  <script src="{{ url_for('static', filename='lobby.js') }}"></script>
+</body>
+</html>
